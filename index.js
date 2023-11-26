@@ -24,10 +24,19 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    const userCollection = client.db("newspaper").collection("users");
 
+//user related api
+app.get('/users', async (req, res)=>{
+    const users = await userCollection.find().toArray();
+    res.send(users);
+})
     
 app.post('/users', async (req, res)=>{
-
+    const newUser = req.body;
+    const result = await userCollection.insertOne(newUser);
+    console.log('user added', result);
+    res.send(result);
 })
 // app.post('/', async (req, res)=>{
 //     const {title, description, url, urlToImage, publishedAt, content} = req.body;

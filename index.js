@@ -35,25 +35,27 @@ app.get('/users', async (req, res)=>{
     res.send(users);
 })
 
-app.get('/users/admin/:email', async(req, res) => {
-    console.log(83, req.params, req?.decoded?.email);
-    const email = req?.params?.email;
-    if (email !== req?.user?.email) {
-      return res.status(403).send({message: 'Unauthorized request'})
-    }
-    const query = {email: email};
-    const user = await userCollection.findOne(query);
-    let admin = false;
-    if(user){
-      admin = user?.role === 'admin';
-    }
-    res.send({admin});
-  })
+// app.get('/users/admin/:email', async(req, res) => {
+//     console.log(83, req.params, req?.decoded?.email);
+//     const email = req?.params?.email;
+//     if (email !== req?.user?.email) {
+//       return res.status(403).send({message: 'Unauthorized request'})
+//     }
+//     const query = {email: email};
+//     const user = await userCollection.findOne(query);
+//     let admin = false;
+//     if(user){
+//       admin = user?.role === 'admin';
+//     }
+//     res.send({admin});
+//   })
     
 app.post('/users', async (req, res)=>{
    const query = {email: req.body.email};
+   console.log(55, req.body.email);
    const existingUser = await userCollection.findOne(query);
     if(existingUser){
+        console.log(58, existingUser);
          res.send({message: 'user already exists', insertedId: null});
     } else {
         const newUser = req.body;
@@ -61,6 +63,7 @@ app.post('/users', async (req, res)=>{
         res.send(result);
     }
 })
+
 // app.post('/', async (req, res)=>{
 //     const {title, description, url, urlToImage, publishedAt, content} = req.body;
 //     try {

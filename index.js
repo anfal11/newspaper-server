@@ -6,7 +6,10 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 const port = process.env.PORT || 5000;
 
 //middlewares
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+}));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ey8cr7h.mongodb.net/?retryWrites=true&w=majority`;
@@ -31,12 +34,32 @@ app.get('/users', async (req, res)=>{
     const users = await userCollection.find().toArray();
     res.send(users);
 })
+
+app.get('/users/admin/:email', async(req, res) => {
+    console.log(83, req.params, req?.decoded?.email);
+    const email = req?.params?.email;
+    if (email !== req?.user?.email) {
+      return res.status(403).send({message: 'Unauthorized request'})
+    }
+    const query = {email: email};
+    const user = await userCollection.findOne(query);
+    let admin = false;
+    if(user){
+      admin = user?.role === 'admin';
+    }
+    res.send({admin});
+  })
     
 app.post('/users', async (req, res)=>{
-    const newUser = req.body;
-    const result = await userCollection.insertOne(newUser);
-    console.log('user added', result);
-    res.send(result);
+   const query = {email: req.body.email};
+   const existingUser = await userCollection.findOne(query);
+    if(existingUser){
+         res.send({message: 'user already exists', insertedId: null});
+    } else {
+        const newUser = req.body;
+        const result = await userCollection.insertOne(newUser);
+        res.send(result);
+    }
 })
 // app.post('/', async (req, res)=>{
 //     const {title, description, url, urlToImage, publishedAt, content} = req.body;

@@ -28,12 +28,27 @@ async function run() {
     await client.connect();
 
     const userCollection = client.db("newspaper").collection("users");
+    const articlesCollection = client.db("newspaper").collection("articles");
 
 //user related api
 app.get('/users', async (req, res)=>{
     const users = await userCollection.find().toArray();
     res.send(users);
 })
+
+app.post('/users', async (req, res)=>{
+    const query = {email: req.body.email};
+    console.log(55, req.body.email);
+    const existingUser = await userCollection.findOne(query);
+     if(existingUser){
+         console.log(58, existingUser);
+          res.send({message: 'user already exists', insertedId: null});
+     } else {
+         const newUser = req.body;
+         const result = await userCollection.insertOne(newUser);
+         res.send(result);
+     }
+ })
 
 // app.get('/users/admin/:email', async(req, res) => {
 //     console.log(83, req.params, req?.decoded?.email);
@@ -50,32 +65,11 @@ app.get('/users', async (req, res)=>{
 //     res.send({admin});
 //   })
     
-app.post('/users', async (req, res)=>{
-   const query = {email: req.body.email};
-   console.log(55, req.body.email);
-   const existingUser = await userCollection.findOne(query);
-    if(existingUser){
-        console.log(58, existingUser);
-         res.send({message: 'user already exists', insertedId: null});
-    } else {
-        const newUser = req.body;
-        const result = await userCollection.insertOne(newUser);
-        res.send(result);
-    }
-})
-
-// app.post('/', async (req, res)=>{
-//     const {title, description, url, urlToImage, publishedAt, content} = req.body;
-//     try {
-//         const newArticle = new Article({
-//         title, description, url, urlToImage, publishedAt, content
-//         })
-//         const savedArticle = await newArticle.save();
-//         res.json(savedArticle);
-//     } catch (error) {
-//         console.log(error);
-//     }
-// })
+    //article related api
+    app.get('/articles', async(req, res)=> {
+        const articles = await articlesCollection.find().toArray();
+        res.send(articles);
+    })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

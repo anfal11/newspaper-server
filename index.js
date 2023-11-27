@@ -2,7 +2,7 @@ const express = require('express')
 const app = express()
 require('dotenv').config()
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
 //middlewares
@@ -70,6 +70,24 @@ app.post('/users', async (req, res)=>{
         const articles = await articlesCollection.find().toArray();
         res.send(articles);
     })
+
+  app.get('/articles/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+
+    try {
+        const article = await articlesCollection.findOne(query);
+        if (!article) {
+            return res.status(404).send({ message: 'Article not found' });
+        }
+        await articlesCollection.updateOne(query, { $inc: { viewCount: 1 } });
+        res.send(article);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: 'Internal server error' });
+    }
+});
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");

@@ -35,6 +35,12 @@ app.get('/users', async (req, res)=>{
     const users = await userCollection.find().toArray();
     res.send(users);
 })
+app.get('/users/:id', async (req, res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+    const users = await userCollection.findOne(query);
+    res.send(users);
+})
 
 app.post('/users', async (req, res)=>{
     const query = {email: req.body.email};
@@ -46,6 +52,21 @@ app.post('/users', async (req, res)=>{
      } else {
          const newUser = req.body;
          const result = await userCollection.insertOne(newUser);
+         res.send(result);
+     }
+ })
+
+ app.put('/users', async (req, res)=>{
+    const query = {email: req.body.email};
+    const existingUser = await userCollection.findOne(query);
+     if(!existingUser){
+          res.send({message: 'user does not exists', insertedId: null});
+     } else {
+         const result = await userCollection.updateOne(query, 
+          {
+            $set: req.body
+          }
+          );
          res.send(result);
      }
  })

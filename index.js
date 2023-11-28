@@ -86,6 +86,7 @@ app.post('/users', async (req, res)=>{
 //     res.send({admin});
 //   })
     
+
     //article related api
     app.get('/articles', async(req, res)=> {
         const articles = await articlesCollection.find().toArray();
@@ -108,6 +109,18 @@ app.post('/users', async (req, res)=>{
         res.status(500).send({ message: 'Internal server error' });
     }
 });
+
+
+  // Search articles by title
+app.get('/articles/search/:query', async (req, res) => {
+  const searchQuery = req.params.query;
+  const searchRegex = new RegExp(searchQuery, 'i');
+  const articles = await articlesCollection.find({
+    title: { $regex: searchRegex },
+  }).toArray();
+  res.send(articles);
+});
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });

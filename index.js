@@ -93,9 +93,10 @@ app.post('/users', async (req, res)=>{
     //     res.send(articles);
     // })
 
+// article related api
     app.get('/articles', async (req, res) => {
       const filter = req.query;
-      console.log(filter);
+      // console.log(filter);
       const query = {};
       if (filter.search) {
         query.title =  { $regex: filter.search , $options: 'i' }
@@ -133,16 +134,11 @@ app.post('/users', async (req, res)=>{
     }
 });
 
-
-  // Search articles by title
-app.get('/articles/search/:query', async (req, res) => {
-  const searchQuery = req.params.query;
-  const searchRegex = new RegExp(searchQuery, 'i');
-  const articles = await articlesCollection.find({
-    title: { $regex: searchRegex },
-  }).toArray();
-  res.send(articles);
-});
+app.post('/articles', async (req, res) => {
+    const article = req.body;
+    const result = await articlesCollection.insertOne(article);
+    res.send(result);
+})
 
 
     // Send a ping to confirm a successful connection

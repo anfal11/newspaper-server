@@ -88,10 +88,33 @@ app.post('/users', async (req, res)=>{
     
 
     //article related api
-    app.get('/articles', async(req, res)=> {
-        const articles = await articlesCollection.find().toArray();
-        res.send(articles);
-    })
+    // app.get('/articles', async(req, res)=> {
+    //     const articles = await articlesCollection.find().toArray();
+    //     res.send(articles);
+    // })
+
+    app.get('/articles', async (req, res) => {
+      const filter = req.query;
+      console.log(filter);
+      const query = {};
+      if (filter.search) {
+        query.title =  { $regex: filter.search , $options: 'i' }
+      }
+   
+      // Handle sorting logic
+      const options = {
+        sort: {
+          viewCount: filter.sort === 'asc' ? 1 : -1,
+        },
+        // projection: sort === 'desc' ? { _id: 0, title: 1, viewCount: 1 } : {},
+      };
+    
+      const articles = await articlesCollection.find(query, options).toArray();
+      res.send(articles);
+    });
+    
+    
+
 
   app.get('/articles/:id', async (req, res) => {
     const id = req.params.id;

@@ -134,11 +134,61 @@ app.post('/users', async (req, res)=>{
     }
 });
 
+// Add an article update API endpoint
+
+// ...
+app.put('/articles/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const update = req.body;
+
+  try {
+    const result = await articlesCollection.updateOne(query, { $set: update });
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Internal server error' });
+  }
+});
+
+
+app.delete('/articles/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+
+  try {
+    const result = await articlesCollection.deleteOne(query);
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Internal server error' });
+  }
+});
+
+
+
+
 app.post('/articles', async (req, res) => {
     const article = req.body;
     const result = await articlesCollection.insertOne(article);
     res.send(result);
 })
+
+// Add an API endpoint to fetch decline reason
+
+app.get('/articles/:id/declineReason', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+
+  try {
+    const article = await articlesCollection.findOne(query);
+    res.send({ declineReason: article?.declineReason });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: 'Internal server error' });
+  }
+});
+
 
 
     // Send a ping to confirm a successful connection

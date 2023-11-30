@@ -30,6 +30,7 @@ async function run() {
 
     const userCollection = client.db("newspaper").collection("users");
     const articlesCollection = client.db("newspaper").collection("articles");
+    const publisherCollection = client.db("newspaper").collection("publisher");
 
     //jwt related api
     app.post("/jwt", async (req, res) => {
@@ -103,8 +104,6 @@ app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
   }
 });
 
-// ... (remaining code)
-
     
 
 //user related api
@@ -113,6 +112,15 @@ app.get('/users', async (req, res)=>{
     res.send(users);
 })
 
+app.get('/admin-stats', async (req, res)=>{
+  const users = await userCollection.find().toArray();
+  const articles = await articlesCollection.find().toArray();
+  const stats = {
+    userCount: users.length,
+    articleCount: articles.length,
+  };
+  res.send(stats);
+})
 app.get('/users/admin/:email', verifyAdmin, async(req, res) => {
   console.log(79, req.params, req?.decoded?.email);
   const email = req?.params?.email;
@@ -171,7 +179,24 @@ app.post('/users', async (req, res)=>{
   res.send(result);
 })
 
-
+// add publisher
+app.post('/publisher', async (req, res)=>{
+  const query = {email: req.body.email};
+  console.log(55, req.body.email);
+  const existingUser = await publisherCollection.findOne(query);
+   if(existingUser){
+       console.log(58, existingUser);
+        res.send({message: 'user already exists', insertedId: null});
+   } else {
+       const newUser = req.body;
+       const result = await publisherCollection.insertOne(newUser);
+       res.send(result);
+   }
+})
+app.get('/publisher', async (req, res)=>{
+  const publisher = await publisherCollection.find().toArray();
+  res.send(publisher)
+})
 // article related api
     app.get('/articles', async (req, res) => {
       const filter = req.query;

@@ -3,6 +3,7 @@ const app = express()
 require('dotenv').config()
 const cors = require('cors')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 
 //middlewares
@@ -30,11 +31,103 @@ async function run() {
     const userCollection = client.db("newspaper").collection("users");
     const articlesCollection = client.db("newspaper").collection("articles");
 
+    //jwt related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET,
+         { expiresIn: '1h' });
+         res.send({ token: token});
+  })
+  
+
+// Middleware to verify JWT token
+const verifyToken = (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(' ')[1];
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(401).send({ message: 'Unauthorized request' });
+  }
+};
+
+// Middleware to verify admin access
+const verifyAdmin = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.email) {
+      return res.status(403).send({ message: 'Unauthorized Access' });
+    }
+
+    const email = req.user.email;
+    const user = await userCollection.findOne({ email });
+
+    if (!user) {
+      return res.status(403).send({ message: 'Unauthorized Access' });
+    }
+
+    if (user.role !== 'admin') {
+      return res.status(403).send({ message: 'Forbidden Access' });
+    }
+
+    next();
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ message: 'Internal server error' });
+  }
+};
+
+// User related API
+app.get('/users/admin/:email', verifyToken, verifyAdmin, async (req, res) => {
+  const email = req.params.email;
+
+  if (email !== req.user.email) {
+    return res.status(403).send({ message: 'Unauthorized request' });
+  }
+
+  try {
+    const query = { email };
+    const user = await userCollection.findOne(query);
+
+    if (!user) {
+      return res.status(404).send({ message: 'User not found' });
+    }
+
+    const isAdmin = user.role === 'admin';
+
+    res.send({ admin: isAdmin });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send({ message: 'Internal server error' });
+  }
+});
+
+// ... (remaining code)
+
+    
+
 //user related api
 app.get('/users', async (req, res)=>{
     const users = await userCollection.find().toArray();
     res.send(users);
 })
+
+app.get('/users/admin/:email', verifyAdmin, async(req, res) => {
+  console.log(79, req.params, req?.decoded?.email);
+  const email = req?.params?.email;
+  if (email !== req?.user?.email) {
+    return res.status(403).send({message: 'Unauthorized request'})
+  }
+  const query = {email: email};
+  const user = await userCollection.findOne(query);
+  let admin = false;
+  if(user){
+    admin = user?.role === 'admin';
+  }
+  res.send({admin});
+})
+
 app.get('/users/:id', async (req, res)=>{
   const id = req.params.id;
   const query = {_id: new ObjectId(id)};
@@ -71,27 +164,13 @@ app.post('/users', async (req, res)=>{
      }
  })
 
-// app.get('/users/admin/:email', async(req, res) => {
-//     console.log(83, req.params, req?.decoded?.email);
-//     const email = req?.params?.email;
-//     if (email !== req?.user?.email) {
-//       return res.status(403).send({message: 'Unauthorized request'})
-//     }
-//     const query = {email: email};
-//     const user = await userCollection.findOne(query);
-//     let admin = false;
-//     if(user){
-//       admin = user?.role === 'admin';
-//     }
-//     res.send({admin});
-//   })
-    
+ app.delete('/users/:id', async(req, res) => {
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await userCollection.deleteOne(query);
+  res.send(result);
+})
 
-    //article related api
-    // app.get('/articles', async(req, res)=> {
-    //     const articles = await articlesCollection.find().toArray();
-    //     res.send(articles);
-    // })
 
 // article related api
     app.get('/articles', async (req, res) => {
@@ -134,35 +213,20 @@ app.post('/users', async (req, res)=>{
     }
 });
 
-// Add an article update API endpoint
-
-// ...
-app.put('/articles/:id', async (req, res) => {
+app.put('/articles/:id', async(req, res) => {
   const id = req.params.id;
-  const query = { _id: new ObjectId(id) };
-  const update = req.body;
-
-  try {
-    const result = await articlesCollection.updateOne(query, { $set: update });
-    res.send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ message: 'Internal server error' });
-  }
-});
-
+  const filter = {_id: new ObjectId(id)};
+  const updatedDoc = {$set: req.body};
+  const result = await articlesCollection.updateOne(filter, updatedDoc);
+  res.send(result);
+})
 
 app.delete('/articles/:id', async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) };
-
-  try {
     const result = await articlesCollection.deleteOne(query);
     res.send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({ message: 'Internal server error' });
-  }
+  
 });
 
 
@@ -175,7 +239,6 @@ app.post('/articles', async (req, res) => {
 })
 
 // Add an API endpoint to fetch decline reason
-
 app.get('/articles/:id/declineReason', async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) };
